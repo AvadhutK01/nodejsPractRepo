@@ -1,21 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+const Cart = require('./cart');
+const db = require('../util/database');
 
-const p = path.join(
-  path.dirname(process.mainModule.filename),
-  'data',
-  'products.json'
-);
 
-const getProductsFromFile = cb => {
-  fs.readFile(p, (err, fileContent) => {
-    if (err) {
-      cb([]);
-    } else {
-      cb(JSON.parse(fileContent));
-    }
-  });
-};
 
 module.exports = class Product {
   constructor(id, title, imageUrl, description, price) {
@@ -28,42 +14,16 @@ module.exports = class Product {
   }
 
   save() {
-    getProductsFromFile(products => {
-      if (this.id) {
-        const existingProductIndex = products.findIndex(prod => prod.id === this.id);
-        const updatedProduct = [...products];
-        updatedProduct[existingProductIndex] = this;
-        fs.writeFile(p, JSON.stringify(updatedProduct), err => {
-          console.log(err);
-        });
-      }
-      else {
-        this.id = Math.random().toString();
-        products.push(this);
-        fs.writeFile(p, JSON.stringify(products), err => {
-          console.log(err);
-        });
-      }
-
-    });
+    return db.execute("INSERT INTO products (product_name, price, description, imageUrl) VALUES (?,?,?,?)", [this.title, this.price, this.description, this.imageUrl]);
   }
   deleteproductbyID() {
-    getProductsFromFile(products => {
-      const DeletingProductIndex = products.findIndex(prod => prod.id === this.id);
-      products.splice(DeletingProductIndex, 1);
-      fs.writeFile(p, JSON.stringify(products), err => {
-        console.log(err);
-      })
-    })
+    return db.execute('delete from products where product_id=?', [this.id]);
   }
-  static fetchAll(cb) {
-    getProductsFromFile(cb);
+  static fetchAll() {
+    return db.execute('select * from products');
   }
-  static findbyId(id, cb) {
-    getProductsFromFile((products) => {
-      const product = products.find(p => p.id === id);
-      cb(product);
-    }
-    )
+  static findbyId(id) {
+    // console.log(id)
+    return db.execute('select * from products where product_id=?', [id]);
   }
 };
